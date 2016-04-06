@@ -2,11 +2,14 @@ package com.joesnason.bbsreader;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +20,8 @@ import java.net.UnknownHostException;
 
 public class MainActivity extends Activity {
 
+    final static int REFLASH_CONTENT = 1;
+
     public int PORT = 23;
     public String HOST = "140.112.172.3";
     private String HOSTNAME = "ptt.cc";
@@ -24,6 +29,8 @@ public class MainActivity extends Activity {
     private boolean mIsconnet = false;
     private Thread mConnThread = null;
     private static String TAG = "bbeReader";
+    private TextView contentView;
+    private Handler UIhandler;
 
 
     @Override
@@ -39,6 +46,27 @@ public class MainActivity extends Activity {
                 Log.d("jojo","onClick");
             }
         });
+
+        contentView = (TextView) findViewById(R.id.contentView);
+
+        UIhandler = new Handler() {
+
+            @Override
+            public void handleMessage(Message msg) {
+
+                switch (msg.what) {
+                    case REFLASH_CONTENT:
+                        contentView.setText(msg.obj.toString());
+
+                    case 2:
+
+
+                    default:
+                        break;
+
+                }
+            }
+        };
 
     }
 
@@ -132,10 +160,13 @@ public class MainActivity extends Activity {
 
                     }
 
-                    final String strData = new String(arrayOfByte, 0,j,"BIG5");
+                    final String strData = new String(arrayOfByte, 0, j,"BIG5");
 
 
-
+                    Message Msg = new Message();
+                    Msg.what = REFLASH_CONTENT;
+                    Msg.obj = strData;
+                    UIhandler.sendMessage(Msg);
                     Log.d(TAG,"get Data: " + strData);
 
                 }
