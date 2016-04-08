@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 doConnection();
-                Log.d("jojo","onClick");
+
             }
         });
 
