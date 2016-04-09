@@ -31,7 +31,10 @@ public class MainActivity extends Activity {
     private static String TAG = "bbeReader";
     private TextView contentView;
     private Handler UIhandler;
+    private byte[] buf;
 
+
+    public final static byte IAC =        (byte)255;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +60,7 @@ public class MainActivity extends Activity {
                 switch (msg.what) {
                     case REFLASH_CONTENT:
                         contentView.setText(msg.obj.toString());
+                        break;
 
                     case 2:
 
@@ -131,24 +135,24 @@ public class MainActivity extends Activity {
 
 
             try {
-                mSocket = new Socket(HOST,PORT);
+                mSocket = new Socket(HOST, PORT);
                 Log.d(TAG,"try to connect");
 
-                InputStream inputstream = mSocket.getInputStream();
+                    InputStream inputstream = mSocket.getInputStream();
                 mIsconnet = true;
 
-                byte[] arrayOfByte = new byte[1000];
+                buf = new byte[4096];
 
                 while(mIsconnet){
 
-                    int j = 0;
+                    int datalen = 0;
                     try {
 
 
-                        int i = arrayOfByte.length;
-                        j = inputstream.read(arrayOfByte, 0, i);
+                        int i = buf.length;
+                        datalen = inputstream.read(buf, 0, i);
 
-                        if (j == -1) {
+                        if (datalen == -1) {
                             throw new Exception("Connection fail");
                         }
                     } catch (Exception e) {
@@ -160,7 +164,10 @@ public class MainActivity extends Activity {
 
                     }
 
-                    final String strData = new String(arrayOfByte, 0, j,"BIG5");
+                    filter(buf,datalen);
+
+                    Log.d("jojo", "return j = " + datalen);
+                    final String strData = new String(buf, 0, datalen,"BIG5");
 
 
                     Message Msg = new Message();
@@ -176,5 +183,34 @@ public class MainActivity extends Activity {
             }
 
         }
+    }
+
+
+    public int filter(byte[] data, int len){
+
+        int bufpos = 0;
+        int count = 0;
+
+        for(bufpos = 0;bufpos <= len; bufpos++){
+
+            if(len <= 0) {
+                return 0;
+            }
+
+            if(bufpos == data.length || bufpos == len){
+                break;
+            }
+
+            if(data[bufpos] == IAC){
+                count++;
+                Log.d("jojo","buf have IAC: " + count);
+                continue;
+            }
+
+        }
+
+        Log.d("jojo","buf have control code: " + count);
+
+        return count;
     }
 }
