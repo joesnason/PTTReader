@@ -194,10 +194,10 @@ public class MainActivity extends Activity {
 
                     //Log.d("jojo", "return j = " + datalen);
                     final String strData = new String(buf, 0, datalen,"BIG5");
-                    
+
                     Message Msg = new Message();
                     Msg.what = REFLASH_CONTENT;
-                    Msg.obj = contenttringBuilder.append(strData);
+                    Msg.obj = contenttringBuilder.append(strData.replaceAll("\u001B\\[[;\\d]*m", "")); //disable ASCII Escape Sequence
                     UIhandler.sendMessage(Msg);
                     Log.d(TAG,"get Data: " + strData);
 
