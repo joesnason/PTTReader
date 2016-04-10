@@ -32,6 +32,7 @@ public class MainActivity extends Activity {
     private TextView contentView;
     private Handler UIhandler;
     private byte[] buf;
+    private StringBuilder contenttringBuilder = new StringBuilder();
 
 
     // telnet command
@@ -193,11 +194,10 @@ public class MainActivity extends Activity {
 
                     //Log.d("jojo", "return j = " + datalen);
                     final String strData = new String(buf, 0, datalen,"BIG5");
-
-
+                    
                     Message Msg = new Message();
                     Msg.what = REFLASH_CONTENT;
-                    Msg.obj = strData;
+                    Msg.obj = contenttringBuilder.append(strData);
                     UIhandler.sendMessage(Msg);
                     Log.d(TAG,"get Data: " + strData);
 
