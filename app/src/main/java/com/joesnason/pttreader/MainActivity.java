@@ -2,6 +2,7 @@ package com.joesnason.pttreader;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -11,6 +12,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -19,6 +23,8 @@ import java.net.UnknownHostException;
 
 
 public class MainActivity extends Activity {
+
+    final boolean DEBUG_DATA_MODE = false;
 
     final static int REFLASH_CONTENT = 1;
 
@@ -33,6 +39,9 @@ public class MainActivity extends Activity {
     private Handler UIhandler;
     private byte[] buf;
     private StringBuilder contenttringBuilder = new StringBuilder();
+
+    private String filename = "pttfileBIG5.txt";
+    private FileOutputStream  filewriter;
 
 
     // telnet command
@@ -138,6 +147,7 @@ public class MainActivity extends Activity {
 
         mIsconnet = false;
 
+
         if(mConnThread != null) {
             mConnThread.interrupt();
         }
@@ -151,14 +161,38 @@ public class MainActivity extends Activity {
             // do DN Lookup
             try {
                 InetAddress pttIP = (InetAddress.getByName(HOSTNAME));
-                if(!(pttIP.equals(""))){
+                if(!(pttIP.equals(""))) {
                     HOST = pttIP.getHostAddress();
-                    Log.d(TAG,"get ptt IP: " + HOST);
+                    Log.d(TAG, "get ptt IP: " + HOST);
                 }
             } catch (UnknownHostException e) {
                 e.printStackTrace();
             }
 
+
+            if(DEBUG_DATA_MODE) {
+                File pttfile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/BBS/", filename);
+                File pttfolder = pttfile.getParentFile();
+
+                if(pttfolder != null)
+                    pttfolder.mkdirs();
+
+
+                if(!pttfile.exists()) {
+                    try {
+                        pttfile.createNewFile();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    Log.d(TAG, "create new file");
+                }
+
+                try {
+                    filewriter = new FileOutputStream(pttfile);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
 
             try {
                 mSocket = new Socket(HOST, PORT);
@@ -184,20 +218,26 @@ public class MainActivity extends Activity {
                     } catch (Exception e) {
                         mIsconnet = false;
                         mSocket.close();
-
+                        if(DEBUG_DATA_MODE) {
+                            filewriter.close();
+                        }
                         e.printStackTrace();
                         mSocket = null;
 
                     }
 
-                    filter(buf,datalen);
+                    filter(buf, datalen);
 
                     //Log.d("jojo", "return j = " + datalen);
                     final String strData = new String(buf, 0, datalen,"BIG5");
 
+                    if(DEBUG_DATA_MODE) {
+                        filewriter.write(strData.getBytes());
+                    }
+
                     Message Msg = new Message();
                     Msg.what = REFLASH_CONTENT;
-                    Msg.obj = contenttringBuilder.append(strData.replaceAll("\u001B\\[[;\\d]*m", "")); //disable ASCII Escape Sequence
+                    Msg.obj = contenttringBuilder.append(strData.replaceAll("\u001B\\[[;\\d]*m", "").replaceAll("\u001B\\[[;\\d]*H","")); //disable ASCII Escape Sequence
                     UIhandler.sendMessage(Msg);
                     Log.d(TAG,"get Data: " + strData);
 
