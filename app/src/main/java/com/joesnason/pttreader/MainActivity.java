@@ -12,6 +12,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.joesnason.pttreader.filter.filter;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -226,7 +228,7 @@ public class MainActivity extends Activity {
 
                     }
 
-                    filter(buf, datalen);
+                    //filter(buf, datalen);
 
                     //Log.d("jojo", "return j = " + datalen);
                     final String strData = new String(buf, 0, datalen,"BIG5");
@@ -237,7 +239,7 @@ public class MainActivity extends Activity {
 
                     Message Msg = new Message();
                     Msg.what = REFLASH_CONTENT;
-                    Msg.obj = contenttringBuilder.append(strData.replaceAll("\u001B\\[[;\\d]*m", "").replaceAll("\u001B\\[[;\\d]*H","")); //disable ASCII Escape Sequence
+                    Msg.obj = contenttringBuilder.append(filter.filter_all_Control(strData)); //disable ASCII Escape Sequence
                     UIhandler.sendMessage(Msg);
                     Log.d(TAG,"get Data: " + strData);
 
@@ -251,7 +253,7 @@ public class MainActivity extends Activity {
     }
 
 
-    public int filter(byte[] data, int len){
+    public int filte(byte[] data, int len){
 
         int bufpos = 0;
         int count = 0;
