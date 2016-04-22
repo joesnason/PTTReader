@@ -2,7 +2,6 @@ package com.joesnason.pttreader;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -12,38 +11,20 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.joesnason.pttreader.filter.filter;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import com.joesnason.pttreader.socket.SocketManager;
 
 
 public class MainActivity extends Activity {
 
     final boolean DEBUG_DATA_MODE = false;
 
-    final static int REFLASH_CONTENT = 1;
+    public final static int REFLASH_CONTENT = 1;
 
-    public int PORT = 23;
-    public String HOST = "140.112.172.3";
-    private String HOSTNAME = "ptt.cc";
-    private Socket mSocket;
-    private boolean mIsconnet = false;
-    private Thread mConnThread = null;
     private static String TAG = "bbeReader";
     private TextView contentView;
     private Handler UIhandler;
-    private byte[] buf;
-    private StringBuilder contenttringBuilder = new StringBuilder();
+    private SocketManager socketManager = null;
 
-    private String filename = "pttfileBIG5.txt";
-    private FileOutputStream  filewriter;
 
 
     // telnet command
@@ -79,15 +60,7 @@ public class MainActivity extends Activity {
         setContentView(com.joesnason.pttreader.R.layout.activity_main);
 
         Button connbtn = (Button) findViewById(com.joesnason.pttreader.R.id.connButton);
-        connbtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                doConnection();
 
-            }
-        });
-
-        contentView = (TextView) findViewById(com.joesnason.pttreader.R.id.contentView);
 
         UIhandler = new Handler() {
 
@@ -109,16 +82,22 @@ public class MainActivity extends Activity {
             }
         };
 
+        socketManager = new SocketManager();
+        socketManager.setHandler(UIhandler);
+
+        connbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                socketManager.doConnect();
+
+            }
+        });
+
+        contentView = (TextView) findViewById(com.joesnason.pttreader.R.id.contentView);
+
+
     }
 
-
-    public void doConnection(){
-
-
-        mConnThread = new Thread(new socketThread());
-        mConnThread.start();
-
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -146,111 +125,11 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        
+        socketManager.disconnet();
 
-        mIsconnet = false;
-
-
-        if(mConnThread != null) {
-            mConnThread.interrupt();
-        }
     }
 
-    public class socketThread implements Runnable {
-
-        @Override
-        public void run() {
-
-            // do DN Lookup
-            try {
-                InetAddress pttIP = (InetAddress.getByName(HOSTNAME));
-                if(!(pttIP.equals(""))) {
-                    HOST = pttIP.getHostAddress();
-                    Log.d(TAG, "get ptt IP: " + HOST);
-                }
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            }
-
-
-            if(DEBUG_DATA_MODE) {
-                File pttfile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/BBS/", filename);
-                File pttfolder = pttfile.getParentFile();
-
-                if(pttfolder != null)
-                    pttfolder.mkdirs();
-
-
-                if(!pttfile.exists()) {
-                    try {
-                        pttfile.createNewFile();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    Log.d(TAG, "create new file");
-                }
-
-                try {
-                    filewriter = new FileOutputStream(pttfile);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            try {
-                mSocket = new Socket(HOST, PORT);
-                Log.d(TAG,"try to connect");
-
-                    InputStream inputstream = mSocket.getInputStream();
-                mIsconnet = true;
-
-                buf = new byte[4096];
-
-                while(mIsconnet){
-
-                    int datalen = 0;
-                    try {
-
-
-                        int i = buf.length;
-                        datalen = inputstream.read(buf, 0, i);
-
-                        if (datalen == -1) {
-                            throw new Exception("Connection fail");
-                        }
-                    } catch (Exception e) {
-                        mIsconnet = false;
-                        mSocket.close();
-                        if(DEBUG_DATA_MODE) {
-                            filewriter.close();
-                        }
-                        e.printStackTrace();
-                        mSocket = null;
-
-                    }
-
-                    //filter(buf, datalen);
-
-                    //Log.d("jojo", "return j = " + datalen);
-                    final String strData = new String(buf, 0, datalen,"BIG5");
-
-                    if(DEBUG_DATA_MODE) {
-                        filewriter.write(strData.getBytes());
-                    }
-
-                    Message Msg = new Message();
-                    Msg.what = REFLASH_CONTENT;
-                    Msg.obj = contenttringBuilder.append(filter.filter_all_Control(strData)); //disable ASCII Escape Sequence
-                    UIhandler.sendMessage(Msg);
-                    Log.d(TAG,"get Data: " + strData);
-
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        }
-    }
 
 
     public int filte(byte[] data, int len){
