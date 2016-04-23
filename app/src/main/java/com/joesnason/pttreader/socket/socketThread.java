@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.joesnason.pttreader.Config;
 import com.joesnason.pttreader.MainActivity;
 import com.joesnason.pttreader.filter.filter;
 
@@ -22,9 +23,7 @@ import java.net.UnknownHostException;
  */
 public class socketThread implements Runnable {
 
-    public int PORT = 23;
-    public String HOST = "140.112.172.3";
-    private String HOSTNAME = "ptt.cc";
+    public String HOST = "140.112.172.3"; // default IP
     final boolean DEBUG_DATA_MODE = false;
 
     private String filename = "pttfileBIG5.txt";
@@ -42,7 +41,7 @@ public class socketThread implements Runnable {
     public void run() {
         // do DN Lookup
         try {
-            InetAddress pttIP = (InetAddress.getByName(HOSTNAME));
+            InetAddress pttIP = (InetAddress.getByName(Config.HOSTNAME));
             if(!(pttIP.equals(""))) {
                 HOST = pttIP.getHostAddress();
                 Log.d(TAG, "get ptt IP: " + HOST);
@@ -77,7 +76,7 @@ public class socketThread implements Runnable {
         }
 
         try {
-            mSocket = new Socket(HOST, PORT);
+            mSocket = new Socket(HOST, Config.PORT);
             Log.d(TAG,"try to connect");
 
             InputStream inputstream = mSocket.getInputStream();
