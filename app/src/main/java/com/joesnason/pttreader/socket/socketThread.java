@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -21,7 +22,7 @@ import java.net.UnknownHostException;
 /**
  * Created by joesnason on 2016/4/22.
  */
-public class socketThread implements Runnable {
+public class socketThread extends Thread {
 
     public String HOST = "140.112.172.3"; // default IP
     final boolean DEBUG_DATA_MODE = false;
@@ -36,6 +37,37 @@ public class socketThread implements Runnable {
     private static String TAG = "bbeReader";
 
     private Handler UIHandler = null;
+
+    private byte[] crlf = new byte[2];
+
+    // telnet command
+    public final static byte SE =         (byte)240;
+    public final static byte NOP =        (byte)241;
+    public final static byte DM =         (byte)242;
+    public final static byte BRK =        (byte)243;
+    public final static byte IP =         (byte)244;
+    public final static byte AO =         (byte)245;
+    public final static byte AYT =        (byte)246;
+    public final static byte EC =         (byte)247;
+    public final static byte EL =         (byte)248;
+    public final static byte GA =         (byte)249;
+    public final static byte SB =         (byte)250;
+    public final static byte WILL =       (byte)251;
+    public final static byte WONT =       (byte)252;
+    public final static byte DO =         (byte)253;
+    public final static byte DONT =       (byte)254;
+    public final static byte IAC =        (byte)255;
+
+
+
+    int will_count =0;
+    int wont_count = 0;
+    int do_count = 0;
+    int dont_count = 0;
+    int sb_count = 0;
+    int se_count = 0;
+    int other = 0;
+
 
     @Override
     public void run() {
@@ -107,7 +139,7 @@ public class socketThread implements Runnable {
 
                 }
 
-                //filter(buf, datalen);
+                parse(buf, datalen);
 
                 //Log.d("jojo", "return j = " + datalen);
                 final String strData = new String(buf, 0, datalen,"BIG5");
@@ -124,6 +156,7 @@ public class socketThread implements Runnable {
                     Log.d(TAG, "get Data: " + strData);
                 }
 
+
             }
 
         } catch (IOException e) {
@@ -137,12 +170,109 @@ public class socketThread implements Runnable {
         UIHandler = handler;
     }
 
+    public void sendCommand(String command){
+
+        if(mSocket == null)
+            return;
+
+
+        byte[] senddata  = new byte[command.length() + 2];
+        int senddataptr = 0;
+        System.arraycopy(command.getBytes(),0,senddata,0,command.length());
+        senddataptr = command.length();
+
+        senddata[senddataptr++] = 13;  //  add /n
+        senddata[senddataptr++] = 10;  //  add /r
+
+
+
+        try {
+            OutputStream outputstream = mSocket.getOutputStream();
+
+            try {
+                outputstream.write(senddata);
+                outputstream.flush();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Log.d(TAG, "send command success");
+    }
+
     public Boolean getConnectState(){
         return mIsconnet;
     }
 
     public void setConnectState(Boolean isconnect){
         mIsconnet = isconnect;
+    }
+
+
+
+    public int parse(byte[] data, int len){
+
+        int bufpos = 0;
+        int count = 0;
+
+        for(bufpos = 0;bufpos <= len; bufpos++){
+
+            if(len <= 0) {
+                return 0;
+            }
+
+            if(bufpos == data.length || bufpos == len){
+                break;
+            }
+
+            if(data[bufpos] == IAC){
+                count++;
+                bufpos++;
+                Log.d(TAG,"buf have IAC: " + count);
+                dispatchCommand(data[bufpos]);
+                Log.d(TAG,"value: " + data[bufpos+1]);
+                continue;
+            }
+
+        }
+
+        Log.d(TAG,"buf have control code: " + count);
+
+        return count;
+    }
+
+    public void dispatchCommand(byte b){
+
+
+        switch (b){
+            case WILL:
+                will_count++;
+                break;
+            case WONT:
+                wont_count++;
+                break;
+            case DO:
+                do_count++;
+                break;
+            case DONT:
+                dont_count++;
+                break;
+            case SB:
+                sb_count++;
+                break;
+            case SE:
+                se_count++;
+                break;
+            default:
+                other++;
+                break;
+        }
+
+
+        Log.d(TAG, "WILL: " + will_count + "  WONT: " + wont_count + " DO: " + do_count + " DONT: " + dont_count + " SB: " + sb_count + " SE: " + se_count + " other: " + other);
     }
 
 }

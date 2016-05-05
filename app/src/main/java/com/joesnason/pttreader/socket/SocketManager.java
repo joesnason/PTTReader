@@ -9,7 +9,7 @@ public class SocketManager {
 
     private Thread mConnThread = null;
     private Handler UIHandler = null;
-    private socketThread socketrunnable;
+    private socketThread socketThread;
     public SocketManager(){
 
     }
@@ -20,15 +20,19 @@ public class SocketManager {
     }
 
     public void doConnect(){
-        socketrunnable = new socketThread();
-        socketrunnable.setHandler(UIHandler);
-        mConnThread = new Thread(socketrunnable);
-        mConnThread.start();
+        socketThread = new socketThread();
+        socketThread.setHandler(UIHandler);
+        socketThread.start();
+    }
+
+    public void sendCommand(String command){
+        socketThread.sendCommand(command);
+
     }
 
     public void disconnet(){
 
-        socketrunnable.setConnectState(false);
+        socketThread.setConnectState(false);
         if(mConnThread != null) {
             mConnThread.interrupt();
         }
