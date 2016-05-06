@@ -136,6 +136,8 @@ public class socketThread extends Thread {
                     }
                     e.printStackTrace();
                     mSocket = null;
+                    Log.d(TAG," close socket");
+                    break;
 
                 }
 

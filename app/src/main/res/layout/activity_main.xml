@@ -20,6 +20,6 @@
         android:text="@string/hello_world" android:layout_width="wrap_content"
         android:layout_height="fill_parent"
         android:layout_below="@id/guestBtn"
-        android:textSize = "10sp"/>
+        android:textSize = "8sp"/>
 
 </LinearLayout>
