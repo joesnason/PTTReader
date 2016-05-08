@@ -185,22 +185,16 @@ public class socketThread extends Thread {
 
         senddata[senddataptr++] = 13;  //  add /n
         senddata[senddataptr++] = 10;  //  add /r
-
-
-
+        
         try {
             OutputStream outputstream = mSocket.getOutputStream();
+            outputstream.write(senddata);
+            outputstream.flush();
 
-            try {
-                outputstream.write(senddata);
-                outputstream.flush();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+
 
         Log.d(TAG, "send command success");
     }
